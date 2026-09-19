@@ -1,0 +1,42 @@
+.header {
+    background-color: #111827;
+    color: white;
+    padding: 20px 0;
+}
+
+.header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 26px;
+}
+
+.nav {
+    display: flex;
+    gap: 25px;
+}
+
+.nav a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.nav a:hover {
+    color: #60a5fa;
+}
+
+@media (max-width: 768px) {
+    .header .container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .nav {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

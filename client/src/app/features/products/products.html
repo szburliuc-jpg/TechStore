@@ -1,0 +1,24 @@
+<section id="products" class="products">
+    <div class="container">
+
+        <h2>Produsele noastre</h2>
+
+        <div class="product-list">
+            @for (produs of produse(); track produs.id) {
+                <article class="product-card">
+                    <img [src]="produs.imagine" [alt]="produs.alt">
+
+                    <h3>{{ produs.nume }}</h3>
+
+                    <p>{{ produs.descriere }}</p>
+
+                    <p class="price">{{ produs.pret }} MDL</p>
+
+                    <a href="#contact" class="button">
+                        Cumpără
+                    </a>
+                </article>
+            }
+        </div>
+    </div>
+</section>
