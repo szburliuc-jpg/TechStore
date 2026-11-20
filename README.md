@@ -1,44 +1,58 @@
 # TechStore – Backend (Laboratorul 3)
 
-API REST în **Node.js + Express + MongoDB (Mongoose)**, pentru frontend-ul Angular din `../client`.
+API REST în **Node.js + Express + PostgreSQL** (gândit pentru **Neon**), pentru frontend-ul Angular din `../client`.
 
 ## Cerințe
 
 - Node.js 20+
-- MongoDB (local, pe portul 27017) **sau** un cluster gratuit MongoDB Atlas
+- O bază PostgreSQL: **Neon** (gratuit, în cloud) sau PostgreSQL local
 
-## Pornire
+## Pornire cu Neon
 
-```bash
-cd server
-npm install
-cp .env.example .env     # (Windows: copy .env.example .env) – apoi verifică MONGODB_URI
-npm start                # http://localhost:3000/api
-```
+1. Intră pe https://neon.tech, creează un cont și un proiect nou (alege regiunea cea mai apropiată, ex. Frankfurt).
+2. În dashboard apasă **Connect** și copiază *Connection string* (arată așa):
+   `postgresql://utilizator:parola@ep-xxxxx.eu-central-1.aws.neon.tech/neondb?sslmode=require`
+3. În `server/`:
+   ```bash
+   npm install
+   cp .env.example .env       # Windows: copy .env.example .env
+   ```
+   Deschide `.env` și pune string-ul tău la `DATABASE_URL=`.
+4. Pornește:
+   ```bash
+   npm start                  # http://localhost:3000/api
+   ```
 
-La prima pornire, dacă colecția `produse` e goală, se adaugă automat cele 3 produse din frontend.
-`npm run seed` șterge toate datele (produse, comenzi, mesaje) și reia de la zero.
+Tabelele (`produse`, `comenzi`, `mesaje`) se creează automat la pornire, iar dacă `produse` e goală se adaugă cele 3 produse din frontend.
+`npm run seed` șterge toate datele, resetează id-urile și reia de la cele 3 produse.
 
-### MongoDB local sau Atlas?
+Verificare: `http://localhost:3000/api/health` trebuie să arate `"postgres": "conectata"`. În Neon poți vedea datele la **Tables**.
 
-- **Local:** instalează MongoDB Community și pornește serviciul `mongod`. `MONGODB_URI=mongodb://127.0.0.1:27017/techstore`
-- **Atlas:** creează un cluster gratuit, un utilizator, permite IP-ul tău în *Network Access*, apoi pune în `.env` string-ul `mongodb+srv://...`
-- **Docker:** `docker run -d -p 27017:27017 --name mongo mongo:7`
+### Probleme frecvente la Neon
+
+- `password authentication failed` – parola din string e greșită (o poți reseta din dashboard).
+- `connection timeout` – prima conexiune după o pauză poate dura câteva secunde (baza „adoarme"); repornește serverul.
+- `channel_binding` – dacă string-ul are `&channel_binding=require` și primești eroare, șterge acea parte din `.env`.
+- Nu pune `.env` pe GitHub (e deja în `.gitignore`).
+
+### PostgreSQL local (alternativă)
+
+`DATABASE_URL=postgresql://postgres:parola@127.0.0.1:5432/techstore` (baza `techstore` trebuie creată în prealabil: `CREATE DATABASE techstore;`).
 
 ## Structura
 
 ```
 src/
-  server.js              conectare MongoDB + pornire server
+  server.js              creare tabele + seed + pornire server
   app.js                 middleware global + rute + erori
-  config.js              port, CORS, MONGODB_URI (din .env)
-  db/connection.js       conectarea Mongoose
+  config.js              port, CORS, DATABASE_URL (din .env)
+  db/pool.js             conexiunea pg (SSL pentru Neon)
+  db/init.js             CREATE TABLE IF NOT EXISTS
   db/seed.js             produsele inițiale
-  models/                scheme Mongoose: Produs, Comanda, Mesaj
   routes/                URL-uri -> controllere
   controllers/           citesc cererea, validează, răspund cu status HTTP
   validators/            validarea datelor primite
-  services/              logica de business + interogări MongoDB
+  services/              logica de business + interogări SQL (parametrizate)
   middleware/            tratarea erorilor (format unic de răspuns)
   utils/                 HttpError, parseId
 ```
@@ -47,7 +61,7 @@ src/
 
 | Metodă | URL | Descriere | Status |
 |---|---|---|---|
-| GET | `/api/health` | verificare server + MongoDB | 200 |
+| GET | `/api/health` | verificare server + bază de date | 200 |
 | GET | `/api/produse` | listă (`?q=&minPret=&maxPret=&sort=pret_asc\|pret_desc\|nume`) | 200 |
 | GET | `/api/produse/:id` | un produs | 200 / 400 / 404 |
 | POST | `/api/produse` | creare produs | 201 / 400 |
@@ -62,25 +76,17 @@ src/
 | GET | `/api/mesaje` | listă mesaje | 200 |
 | GET | `/api/mesaje/:id` | un mesaj | 200 / 400 / 404 |
 
-**Id-uri:** MongoDB folosește `ObjectId`, deci `id` este un string de 24 de caractere (ex. `"6b00ad3ba0b62b38c9a6c97c"`),
-nu un număr. În răspunsuri `_id` apare ca `id`. Restul câmpurilor produsului sunt identice cu modelul Angular
-(`nume, descriere, pret, imagine, alt`).
+Id-urile sunt numere întregi (1, 2, 3...), iar `GET /api/produse` returnează direct un `Produs[]`
+identic cu modelul din Angular (`id, nume, descriere, pret, imagine, alt`).
 
 Erorile au mereu formatul: `{ "error": { "status": 400, "message": "...", "details": { ... } } }`.
 
 ## Testare cu curl
 
-Mai întâi ia un id real:
-
 ```bash
 curl http://localhost:3000/api/produse
-```
-
-Apoi (înlocuiește `ID_PRODUS` cu un `id` din răspuns):
-
-```bash
-curl http://localhost:3000/api/produse/ID_PRODUS
 curl "http://localhost:3000/api/produse?sort=pret_desc&minPret=1000"
+curl http://localhost:3000/api/produse/1
 
 curl -X POST http://localhost:3000/api/produse \
   -H "Content-Type: application/json" \
@@ -88,7 +94,7 @@ curl -X POST http://localhost:3000/api/produse \
 
 curl -X POST http://localhost:3000/api/comenzi \
   -H "Content-Type: application/json" \
-  -d '{"produsId":"ID_PRODUS","cantitate":2,"nume":"Ion Popescu","email":"ion@mail.com","adresa":"Str. Stefan cel Mare 1, Chisinau"}'
+  -d '{"produsId":1,"cantitate":2,"nume":"Ion Popescu","email":"ion@mail.com","adresa":"Str. Stefan cel Mare 1, Chisinau"}'
 
 curl -X POST http://localhost:3000/api/mesaje \
   -H "Content-Type: application/json" \
@@ -100,10 +106,9 @@ curl -X POST http://localhost:3000/api/mesaje \
 ## Testare cu Postman
 
 `File → Import` → `postman/TechStore.postman_collection.json`. Rulează cererile în ordine:
-id-urile (`produsId`, `comandaId` etc.) se salvează automat în variabile după „Lista produse", „Creare produs" ș.a.m.d.
+id-urile (`produsId`, `comandaId` etc.) se salvează automat în variabile.
 
 ## Pentru Laboratorul 4 (doar ca idee)
 
-- CORS e deja activat pentru `http://localhost:4200`.
-- În Angular: `provideHttpClient()` în `app.config.ts`, iar `Products` citește `GET /api/produse`.
-- În `core/models/produs.ts` se schimbă `id: number` în `id: string` (din cauza ObjectId).
+CORS e deja activat pentru `http://localhost:4200`. În Angular se adaugă `provideHttpClient()` în `app.config.ts`,
+iar `Products` citește `GET /api/produse`. Modelul `Produs` din Angular rămâne neschimbat (`id: number`).
