@@ -1,0 +1,462 @@
+{
+  "info": {
+    "name": "TechStore API (Laborator 3 - PostgreSQL/Neon)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "produsId",
+      "value": ""
+    },
+    {
+      "key": "newProdusId",
+      "value": ""
+    },
+    {
+      "key": "comandaId",
+      "value": ""
+    },
+    {
+      "key": "mesajId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Sistem",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Produse (rulează în ordine)",
+      "item": [
+        {
+          "name": "Lista produse",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d.length) pm.collectionVariables.set('produsId', d[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/produse",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produse"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filtrare + sortare",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/produse?q=lap&minPret=500&maxPret=20000&sort=pret_desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produse"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "lap"
+                },
+                {
+                  "key": "minPret",
+                  "value": "500"
+                },
+                {
+                  "key": "maxPret",
+                  "value": "20000"
+                },
+                {
+                  "key": "sort",
+                  "value": "pret_desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Produs după id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/produse/{{produsId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produse",
+                "{{produsId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Creare produs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('newProdusId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nume\": \"Mouse Gaming\",\n  \"descriere\": \"Mouse precis, 16000 DPI.\",\n  \"pret\": 450,\n  \"imagine\": \"https://example.com/mouse.jpg\",\n  \"alt\": \"Mouse gaming\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/produse",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produse"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Creare produs (date invalide -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nume\": \"X\",\n  \"pret\": -5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/produse",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produse"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Înlocuire produs (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nume\": \"Mouse Pro\",\n  \"descriere\": \"Mouse profesional.\",\n  \"pret\": 500,\n  \"imagine\": \"https://example.com/m.jpg\",\n  \"alt\": \"Mouse\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/produse/{{newProdusId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produse",
+                "{{newProdusId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Modificare parțială (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pret\": 399\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/produse/{{newProdusId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produse",
+                "{{newProdusId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ștergere produs",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/produse/{{newProdusId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produse",
+                "{{newProdusId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comenzi",
+      "item": [
+        {
+          "name": "Creare comandă (Cumpără)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('comandaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"produsId\": {{produsId}},\n  \"cantitate\": 2,\n  \"nume\": \"Ion Popescu\",\n  \"email\": \"ion@mail.com\",\n  \"telefon\": \"+373 69 123 456\",\n  \"adresa\": \"Str. Ștefan cel Mare 1, Chișinău\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comenzi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comenzi"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lista comenzi",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comenzi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comenzi"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Comenzi după status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comenzi?status=noua",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comenzi"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "noua"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Comandă după id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comenzi/{{comandaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comenzi",
+                "{{comandaId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Schimbare status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmata\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comenzi/{{comandaId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comenzi",
+                "{{comandaId}}",
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mesaje (Contact)",
+      "item": [
+        {
+          "name": "Trimite mesaj",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('mesajId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nume\": \"Ana\",\n  \"email\": \"ana@mail.com\",\n  \"mesaj\": \"Bună, vreau detalii despre livrare.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mesaje",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mesaje"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lista mesaje",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mesaje",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mesaje"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mesaj după id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mesaje/{{mesajId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mesaje",
+                "{{mesajId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
